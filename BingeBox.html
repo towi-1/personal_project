@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BingeBox - Your Entertainment Hub</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="#home" class="logo">BingeBox</a>
+            <div class="nav-links">
+                <a href="#home">Home</a>
+                <a href="#browse">Browse</a>
+                <a href="#watchlist">My Watchlist</a>
+                <a href="#profile">Profile</a>
+            </div>
+            <div class="nav-actions">
+                <button id="theme-toggle" class="theme-btn" aria-label="Toggle dark mode">
+                    <span class="theme-icon">🌙</span>
+                </button>
+                <button id="profile-btn" class="profile-btn">Login</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Home Page Section -->
+    <section id="home" class="page active">
+        <div class="hero">
+            <div class="hero-content">
+                <h1>Welcome to BingeBox</h1>
+                <p>Discover and watch your favorite shows in one simple, clean interface</p>
+                <div class="hero-actions">
+                    <button class="btn btn-primary" onclick="location.href='#browse'">Browse Shows</button>
+                    <button class="btn btn-secondary" onclick="location.href='#profile'">Create Profile</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="features">
+            <h2>Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-icon">🔍</span>
+                    <h3>Smart Search</h3>
+                    <p>Find shows quickly with keyword search</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">⭐</span>
+                    <h3>Personalized</h3>
+                    <p>Get recommendations based on your preferences</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">📚</span>
+                    <h3>Watchlist</h3>
+                    <p>Save and organize your favorite shows</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🎨</span>
+                    <h3>Clean Design</h3>
+                    <p>No ads, no clutter, just content</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Browse Page Section -->
+    <section id="browse" class="page">
+        <div class="browse-header">
+            <h1>Browse Shows</h1>
+            
+            <!-- Search Bar -->
+            <div class="search-container">
+                <input 
+                    type="text" 
+                    id="search-input" 
+                    class="search-bar" 
+                    placeholder="Search for shows..."
+                    aria-label="Search shows">
+                <button id="search-btn" class="btn-search">Search</button>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters">
+                <select id="genre-filter" class="filter-select" aria-label="Filter by genre">
+                    <option value="">All Genres</option>
+                    <option value="action">Action</option>
+                    <option value="comedy">Comedy</option>
+                    <option value="drama">Drama</option>
+                    <option value="sci-fi">Sci-Fi</option>
+                    <option value="thriller">Thriller</option>
+                </select>
+
+                <select id="year-filter" class="filter-select" aria-label="Filter by year">
+                    <option value="">All Years</option>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                    <option value="2022">2022</option>
+                    <option value="2021">2021</option>
+                </select>
+
+                <select id="sort-filter" class="filter-select" aria-label="Sort shows">
+                    <option value="popularity">Popular</option>
+                    <option value="rating">Top Rated</option>
+                    <option value="release_date">Release Date</option>
+                    <option value="title">Title A-Z</option>
+                </select>
+
+                <button id="favorites-filter" class="filter-btn">My Favorites</button>
+                <button id="recent-filter" class="filter-btn">Recently Watched</button>
+            </div>
+        </div>
+
+        <!-- Shows Grid -->
+        <div id="shows-grid" class="shows-grid">
+            <!-- Shows will be dynamically loaded here -->
+            <div class="loading">Loading shows...</div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination">
+            <button id="prev-page" class="btn btn-page">Previous</button>
+            <span id="page-info" class="page-info">Page 1</span>
+            <button id="next-page" class="btn btn-page">Next</button>
+        </div>
+    </section>
+
+    <!-- Show Details Page Section -->
+    <section id="show-details" class="page">
+        <button class="back-btn" onclick="location.href='#browse'">← Back to Browse</button>
+        
+        <div class="show-details-container">
+            <div class="show-poster">
+                <img id="detail-poster" src="" alt="Show poster">
+            </div>
+
+            <div class="show-info">
+                <h1 id="detail-title">Show Title</h1>
+                
+                <div class="show-meta">
+                    <span id="detail-rating" class="rating">⭐ 0.0</span>
+                    <span id="detail-year" class="year">Year</span>
+                    <span id="detail-genre" class="genre">Genre</span>
+                </div>
+
+                <p id="detail-description" class="description">
+                    Show description will appear here...
+                </p>
+
+                <div class="show-actions">
+                    <button id="play-btn" class="btn btn-primary">▶ Watch Now</button>
+                    <button id="download-btn" class="btn btn-secondary">⬇ Download</button>
+                    <button id="add-watchlist" class="btn btn-icon">+ Watchlist</button>
+                    <button id="favorite-btn" class="btn btn-icon">❤ Favorite</button>
+                </div>
+
+                <div id="video-player" class="video-player hidden">
+                    <iframe id="player-iframe" src="" allowfullscreen></iframe>
+                </div>
+            </div>
+        </div>
+
+        <!-- Similar Shows -->
+        <div class="similar-shows">
+            <h2>You might also like</h2>
+            <div id="similar-grid" class="shows-grid">
+                <!-- Similar shows will be loaded here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Watchlist Page Section -->
+    <section id="watchlist" class="page">
+        <div class="watchlist-header">
+            <h1>My Watchlist</h1>
+            <div class="watchlist-tabs">
+                <button class="tab-btn active" data-tab="saved">Watch Later</button>
+                <button class="tab-btn" data-tab="favorites">Favorites</button>
+                <button class="tab-btn" data-tab="recent">Recently Watched</button>
+            </div>
+        </div>
+
+        <div id="watchlist-grid" class="shows-grid">
+            <div class="empty-state">
+                <span class="empty-icon">📺</span>
+                <p>Your watchlist is empty</p>
+                <button class="btn btn-primary" onclick="location.href='#browse'">Browse Shows</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Profile Page Section -->
+    <section id="profile" class="page">
+        <div class="profile-container">
+            <h1>Profile Settings</h1>
+
+            <div id="profile-form" class="profile-form">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" placeholder="Enter your username">
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" placeholder="your@email.com">
+                </div>
+
+                <div class="form-group">
+                    <label>Favorite Genres</label>
+                    <div class="genre-checkboxes">
+                        <label><input type="checkbox" value="action"> Action</label>
+                        <label><input type="checkbox" value="comedy"> Comedy</label>
+                        <label><input type="checkbox" value="drama"> Drama</label>
+                        <label><input type="checkbox" value="sci-fi"> Sci-Fi</label>
+                        <label><input type="checkbox" value="thriller"> Thriller</label>
+                        <label><input type="checkbox" value="horror"> Horror</label>
+                        <label><input type="checkbox" value="romance"> Romance</label>
+                        <label><input type="checkbox" value="documentary"> Documentary</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="bio">About Me</label>
+                    <textarea id="bio" rows="4" placeholder="Tell us about your viewing preferences..."></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button id="save-profile" class="btn btn-primary">Save Profile</button>
+                    <button id="clear-data" class="btn btn-secondary">Clear All Data</button>
+                </div>
+            </div>
+
+            <div class="preferences">
+                <h2>Preferences</h2>
+                <div class="preference-item">
+                    <label for="theme-preference">Theme</label>
+                    <select id="theme-preference">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                        <option value="auto">Auto</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2025 BingeBox. All rights reserved.</p>
+            <p>Powered by TMDb API</p>
+        </div>
+    </footer>
+
+    <script src="js/shows-data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
