@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BingeBox - Your Entertainment Hub</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
+
 <body>
     <!-- Navigation Bar -->
     <nav class="navbar">
@@ -33,8 +35,8 @@
                 <h1>Welcome to BingeBox</h1>
                 <p>Discover and watch your favorite shows in one simple, clean interface</p>
                 <div class="hero-actions">
-                    <button class="btn btn-primary" onclick="location.href='#browse'">Browse Shows</button>
-                    <button class="btn btn-secondary" onclick="location.href='#profile'">Create Profile</button>
+                    <button class="btn btn-primary" onclick="showPage('browse')">Browse Shows</button>
+                    <button class="btn btn-secondary" onclick="showPage('login'); isSignupMode = true; toggleAuthenticationMode();">Create Profile</button>
                 </div>
             </div>
         </div>
@@ -70,15 +72,9 @@
     <section id="browse" class="page">
         <div class="browse-header">
             <h1>Browse Shows</h1>
-            
             <!-- Search Bar -->
             <div class="search-container">
-                <input 
-                    type="text" 
-                    id="search-input" 
-                    class="search-bar" 
-                    placeholder="Search for shows..."
-                    aria-label="Search shows">
+                <input type="text" id="search-input" class="search-bar" placeholder="Search for shows..." aria-label="Search shows">
                 <button id="search-btn" class="btn-search">Search</button>
             </div>
 
@@ -92,7 +88,6 @@
                     <option value="sci-fi">Sci-Fi</option>
                     <option value="thriller">Thriller</option>
                 </select>
-
                 <select id="year-filter" class="filter-select" aria-label="Filter by year">
                     <option value="">All Years</option>
                     <option value="2024">2024</option>
@@ -100,14 +95,12 @@
                     <option value="2022">2022</option>
                     <option value="2021">2021</option>
                 </select>
-
                 <select id="sort-filter" class="filter-select" aria-label="Sort shows">
                     <option value="popularity">Popular</option>
                     <option value="rating">Top Rated</option>
                     <option value="release_date">Release Date</option>
                     <option value="title">Title A-Z</option>
                 </select>
-
                 <button id="favorites-filter" class="filter-btn">My Favorites</button>
                 <button id="recent-filter" class="filter-btn">Recently Watched</button>
             </div>
@@ -129,45 +122,92 @@
 
     <!-- Show Details Page Section -->
     <section id="show-details" class="page">
-        <button class="back-btn" onclick="location.href='#browse'">← Back to Browse</button>
-        
-        <div class="show-details-container">
-            <div class="show-poster">
-                <img id="detail-poster" src="" alt="Show poster">
-            </div>
+        <button class="back-btn" onclick="showPage('browse')">← Back to Browse</button>
 
-            <div class="show-info">
-                <h1 id="detail-title">Show Title</h1>
-                
-                <div class="show-meta">
-                    <span id="detail-rating" class="rating">⭐ 0.0</span>
-                    <span id="detail-year" class="year">Year</span>
-                    <span id="detail-genre" class="genre">Genre</span>
+        <!-- Show Header with Backdrop -->
+        <div class="show-header">
+            <div class="show-backdrop-container">
+                <img id="backdrop-image" src="" alt="Show backdrop" class="backdrop-image">
+                <div class="backdrop-overlay">
+                    <button id="hero-play-btn" class="hero-play-button">▶</button>
                 </div>
+            </div>
+        </div>
 
-                <p id="detail-description" class="description">
+        <!-- Show Info Section -->
+        <div class="show-info-section">
+            <div class="show-poster-thumb">
+                <img id="detail-poster" src="" alt="Show poster">
+                <div class="rating-display">
+                    <span id="detail-rating-num">0.0</span>
+                    <span class="rating-text">/ 10 rated</span>
+                </div>
+            </div>
+            <div class="show-info-content">
+                <h1 id="detail-title">Show Title</h1>
+                <div class="info-badges">
+                    <button class="badge-btn">Trailer</button>
+                    <button class="badge-btn">HD</button>
+                    <span id="detail-rating" class="imdb-badge">IMDB: 0.0</span>
+                </div>
+                <p id="detail-description" class="description-text">
                     Show description will appear here...
                 </p>
-
-                <div class="show-actions">
-                    <button id="play-btn" class="btn btn-primary">▶ Watch Now</button>
-                    <button id="download-btn" class="btn btn-secondary">⬇ Download</button>
-                    <button id="add-watchlist" class="btn btn-icon">+ Watchlist</button>
-                    <button id="favorite-btn" class="btn btn-icon">❤ Favorite</button>
+                <div class="info-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Released:</span>
+                        <span id="detail-year" class="detail-value">----</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Genre:</span>
+                        <span id="detail-genre" class="detail-value">----</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Duration:</span>
+                        <span id="detail-duration" class="detail-value">----</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Country:</span>
+                        <span id="detail-country" class="detail-value">----</span>
+                    </div>
                 </div>
-
-                <div id="video-player" class="video-player hidden">
-                    <iframe id="player-iframe" src="" allowfullscreen></iframe>
+                <div class="action-buttons">
+                    <button id="watch-now-btn" class="btn btn-primary">▶ Watch now</button>
+                    <button id="add-favorite-btn" class="btn btn-secondary">+ Add to favorite</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Episodes Section -->
+        <div class="episodes-container">
+            <h2 class="section-title">
+                <span class="list-icon">☰</span> Season
+                <select id="season-select" class="season-select">
+                    <option value="1">1</option>
+                </select>
+                <span class="dropdown-arrow">▼</span>
+            </h2>
+            <div id="episodes-list" class="episodes-list">
+                <!-- Episode buttons will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Video Player -->
+        <div id="player-container" class="player-container hidden">
+            <div class="player-top">
+                <h3 id="now-playing-title"></h3>
+                <button id="close-player-btn" class="close-btn">✕</button>
+            </div>
+            <iframe id="video-iframe" src="" allowfullscreen></iframe>
+            <div class="player-bottom">
+                <button id="download-btn" class="btn btn-secondary">⬇ Download</button>
             </div>
         </div>
 
         <!-- Similar Shows -->
         <div class="similar-shows">
-            <h2>You might also like</h2>
-            <div id="similar-grid" class="shows-grid">
-                <!-- Similar shows will be loaded here -->
-            </div>
+            <h2>You may also like</h2>
+            <div id="similar-grid" class="shows-grid"></div>
         </div>
     </section>
 
@@ -181,12 +221,42 @@
                 <button class="tab-btn" data-tab="recent">Recently Watched</button>
             </div>
         </div>
-
         <div id="watchlist-grid" class="shows-grid">
             <div class="empty-state">
                 <span class="empty-icon">📺</span>
                 <p>Your watchlist is empty</p>
-                <button class="btn btn-primary" onclick="location.href='#browse'">Browse Shows</button>
+                <button class="btn btn-primary" onclick="showPage('browse')">Browse Shows</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Login Page Section -->
+    <section id="login" class="page">
+        <div class="login-container">
+            <div class="login-card">
+                <h1 id="login-title">Welcome Back</h1>
+                <p class="login-subtitle" id="login-subtitle">Sign in to access your watchlist</p>
+
+                <!-- Login Form -->
+                <form id="login-form" class="login-form">
+                    <div class="form-group" id="email-field-group">
+                        <label for="login-email">Email</label>
+                        <input type="email" id="login-email" placeholder="Enter your email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-username">Username</label>
+                        <input type="text" id="login-username" placeholder="Enter your username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" placeholder="Enter your password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In</button>
+                </form>
+
+                <div class="login-footer">
+                    <p id="toggle-auth-text">New user? <a href="#" id="toggle-auth-mode">Create an account</a></p>
+                </div>
             </div>
         </div>
     </section>
@@ -196,17 +266,24 @@
         <div class="profile-container">
             <h1>Profile Settings</h1>
 
+            <!-- Profile Picture Section -->
+            <div class="profile-picture-section">
+                <div class="profile-pic-container">
+                    <img id="profile-picture" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Crect fill='%2306b6d4' width='150' height='150'/%3E%3Ctext fill='white' font-size='60' font-family='Arial' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E" alt="Profile Picture">
+                    <button id="upload-pic-btn" class="btn btn-secondary">Change Picture</button>
+                    <input type="file" id="profile-pic-input" accept="image/*" style="display: none;">
+                </div>
+            </div>
+
             <div id="profile-form" class="profile-form">
                 <div class="form-group">
                     <label for="username">Username</label>
                     <input type="text" id="username" placeholder="Enter your username">
                 </div>
-
                 <div class="form-group">
                     <label for="email">Email</label>
                     <input type="email" id="email" placeholder="your@email.com">
                 </div>
-
                 <div class="form-group">
                     <label>Favorite Genres</label>
                     <div class="genre-checkboxes">
@@ -220,27 +297,13 @@
                         <label><input type="checkbox" value="documentary"> Documentary</label>
                     </div>
                 </div>
-
                 <div class="form-group">
                     <label for="bio">About Me</label>
                     <textarea id="bio" rows="4" placeholder="Tell us about your viewing preferences..."></textarea>
                 </div>
-
                 <div class="form-actions">
                     <button id="save-profile" class="btn btn-primary">Save Profile</button>
-                    <button id="clear-data" class="btn btn-secondary">Clear All Data</button>
-                </div>
-            </div>
-
-            <div class="preferences">
-                <h2>Preferences</h2>
-                <div class="preference-item">
-                    <label for="theme-preference">Theme</label>
-                    <select id="theme-preference">
-                        <option value="light">Light</option>
-                        <option value="dark">Dark</option>
-                        <option value="auto">Auto</option>
-                    </select>
+                    <button id="logout-btn" class="btn btn-secondary">Logout</button>
                 </div>
             </div>
         </div>
@@ -253,8 +316,8 @@
             <p>Powered by TMDb API</p>
         </div>
     </footer>
-
     <script src="js/shows-data.js"></script>
-    <script src="script.js"></script>
+    <script src="js/script.js"></script>
 </body>
+
 </html>
