@@ -8,13 +8,17 @@ let watchlist = JSON.parse(localStorage.getItem('watchlist')) || [];
 let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
 let recentlyWatched = JSON.parse(localStorage.getItem('recentlyWatched')) || [];
 let userProfile = JSON.parse(localStorage.getItem('userProfile')) || null;
+let isLoggedIn = JSON.parse(localStorage.getItem('isLoggedIn')) || false;
+let isSignupMode = false;
 
 // Initialize app on page load
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('BingeBox app starting...');
     initializeApp();
     setupEventListeners();
     loadThemePreference();
     showPage('home');
+    console.log('BingeBox app loaded successfully!');
 });
 
 // Initialize the application
@@ -22,6 +26,7 @@ function initializeApp() {
     currentShows = getAllShows();
     displayShows(currentShows);
     updateProfileButton();
+    updateHomePageButtons();
 }
 
 // Setup all event listeners
@@ -36,29 +41,76 @@ function setupEventListeners() {
     });
 
     // Theme toggle
-    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', toggleTheme);
+    }
 
     // Search
-    document.getElementById('search-btn').addEventListener('click', performSearch);
-    document.getElementById('search-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') performSearch();
-    });
+    const searchBtn = document.getElementById('search-btn');
+    const searchInput = document.getElementById('search-input');
+    if (searchBtn) searchBtn.addEventListener('click', performSearch);
+    if (searchInput) {
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') performSearch();
+        });
+    }
 
     // Filters
-    document.getElementById('genre-filter').addEventListener('change', applyFilters);
-    document.getElementById('year-filter').addEventListener('change', applyFilters);
-    document.getElementById('sort-filter').addEventListener('change', applyFilters);
-    document.getElementById('favorites-filter').addEventListener('click', showFavoritesOnly);
-    document.getElementById('recent-filter').addEventListener('click', showRecentOnly);
+    const genreFilter = document.getElementById('genre-filter');
+    const yearFilter = document.getElementById('year-filter');
+    const sortFilter = document.getElementById('sort-filter');
+    const favoritesFilter = document.getElementById('favorites-filter');
+    const recentFilter = document.getElementById('recent-filter');
+    
+    if (genreFilter) genreFilter.addEventListener('change', applyFilters);
+    if (yearFilter) yearFilter.addEventListener('change', applyFilters);
+    if (sortFilter) sortFilter.addEventListener('change', applyFilters);
+    if (favoritesFilter) favoritesFilter.addEventListener('click', showFavoritesOnly);
+    if (recentFilter) recentFilter.addEventListener('click', showRecentOnly);
 
     // Pagination
-    document.getElementById('prev-page').addEventListener('click', () => changePage(-1));
-    document.getElementById('next-page').addEventListener('click', () => changePage(1));
+    const prevPage = document.getElementById('prev-page');
+    const nextPage = document.getElementById('next-page');
+    if (prevPage) prevPage.addEventListener('click', () => changePage(-1));
+    if (nextPage) nextPage.addEventListener('click', () => changePage(1));
 
-    // Profile
-    document.getElementById('profile-btn').addEventListener('click', () => showPage('profile'));
-    document.getElementById('save-profile').addEventListener('click', saveProfile);
-    document.getElementById('clear-data').addEventListener('click', clearAllData);
+    // Profile/Login
+    const profileBtn = document.getElementById('profile-btn');
+    if (profileBtn) profileBtn.addEventListener('click', handleProfileClick);
+    
+    // Login form
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+    }
+    
+    // Auth mode toggle
+    const toggleAuthMode = document.getElementById('toggle-auth-mode');
+    if (toggleAuthMode) {
+        toggleAuthMode.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleAuthenticationMode();
+        });
+    }
+    
+    // Profile actions
+    const saveProfileBtn = document.getElementById('save-profile');
+    const logoutBtn = document.getElementById('logout-btn');
+    if (saveProfileBtn) saveProfileBtn.addEventListener('click', saveProfile);
+    if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+    
+    // Profile picture upload
+    const uploadPicBtn = document.getElementById('upload-pic-btn');
+    const profilePicInput = document.getElementById('profile-pic-input');
+    if (uploadPicBtn) {
+        uploadPicBtn.addEventListener('click', () => {
+            if (profilePicInput) profilePicInput.click();
+        });
+    }
+    if (profilePicInput) {
+        profilePicInput.addEventListener('change', handleProfilePicUpload);
+    }
 
     // Watchlist tabs
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -68,14 +120,43 @@ function setupEventListeners() {
             loadWatchlistTab(e.target.dataset.tab);
         });
     });
+    
+    // Close player button
+    const closePlayerBtn = document.getElementById('close-player-btn');
+    if (closePlayerBtn) {
+        closePlayerBtn.addEventListener('click', () => {
+            const playerContainer = document.getElementById('player-container');
+            const playerIframe = document.getElementById('video-iframe');
+            playerIframe.src = '';
+            playerContainer.classList.add('hidden');
+        });
+    }
+
+    // Download button
+    const downloadBtn = document.getElementById('download-btn');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', () => {
+            alert('Download feature coming soon! Episodes will be available for download.');
+        });
+    }
+    
+    console.log('All event listeners set up successfully!');
 }
 
 // Page navigation
 function showPage(pageName) {
+    // Remove active class from all pages
     document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+
+    clearVideoPlayer();
+    
+    // Add active class to target page
     const targetPage = document.getElementById(pageName);
     if (targetPage) {
         targetPage.classList.add('active');
+        
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         
         // Load content for specific pages
         if (pageName === 'browse') {
@@ -84,7 +165,231 @@ function showPage(pageName) {
             loadWatchlistTab('saved');
         } else if (pageName === 'profile') {
             loadProfileData();
+        } else if (pageName === 'home') {
+            updateHomePageButtons();
+        } else if (pageName === 'login') {
+            // Reset to login mode when showing login page
+            if (isSignupMode) {
+                isSignupMode = false;
+                toggleAuthenticationMode();
+            }
         }
+    } else {
+        console.error('Page not found:', pageName);
+    }
+}
+
+// Update homepage buttons based on login status
+function updateHomePageButtons() {
+    const heroActions = document.querySelector('.hero-actions');
+    if (!heroActions) return;
+    
+    if (isLoggedIn) {
+        // Only show Browse button when logged in
+        heroActions.innerHTML = `
+            <button class="btn btn-primary" onclick="showPage('browse')">Browse Shows</button>
+        `;
+    } else {
+        // Show both buttons when logged out
+        heroActions.innerHTML = `
+            <button class="btn btn-primary" onclick="showPage('browse')">Browse Shows</button>
+            <button class="btn btn-secondary" onclick="showPage('login'); isSignupMode = true; toggleAuthenticationMode();">Create Profile</button>
+        `;
+    }
+}
+
+// Toggle between login and signup mode
+function toggleAuthenticationMode() {
+    isSignupMode = !isSignupMode;
+    
+    const title = document.getElementById('login-title');
+    const subtitle = document.getElementById('login-subtitle');
+    const emailFieldGroup = document.getElementById('email-field-group');
+    const submitBtn = document.querySelector('#login-form button[type="submit"]');
+    const toggleText = document.getElementById('toggle-auth-text');
+    
+    if (isSignupMode) {
+        // Signup mode
+        title.textContent = 'Create Account';
+        subtitle.textContent = 'Sign up to start your watchlist';
+        emailFieldGroup.style.display = 'block';
+        submitBtn.textContent = 'Sign Up';
+        toggleText.innerHTML = 'Already have an account? <a href="#" id="toggle-auth-mode">Sign in</a>';
+    } else {
+        // Login mode
+        title.textContent = 'Welcome Back';
+        subtitle.textContent = 'Sign in to access your watchlist';
+        emailFieldGroup.style.display = 'none';
+        submitBtn.textContent = 'Sign In';
+        toggleText.innerHTML = 'New user? <a href="#" id="toggle-auth-mode">Create an account</a>';
+    }
+    
+    // Re-attach click listener to the new link
+    const newToggleLink = document.getElementById('toggle-auth-mode');
+    if (newToggleLink) {
+        newToggleLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleAuthenticationMode();
+        });
+    }
+}
+
+// Handle login/signup
+function handleLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value.trim();
+    const email = document.getElementById('login-email').value.trim();
+    
+    if (isSignupMode) {
+        // Sign up mode - require email
+        if (username && password && email) {
+            isLoggedIn = true;
+            userProfile = {
+                username: username,
+                email: email,
+                bio: '',
+                genres: [],
+                profilePicture: null
+            };
+            
+            localStorage.setItem('isLoggedIn', JSON.stringify(true));
+            localStorage.setItem('userProfile', JSON.stringify(userProfile));
+            
+            updateProfileButton();
+            updateHomePageButtons();
+            showPage('home');
+            alert('Account created successfully!');
+            isSignupMode = false;
+        } else {
+            alert('Please fill in all fields');
+        }
+    } else {
+        // Login mode - don't require email
+        if (username && password) {
+            // Check if user exists in localStorage
+            const savedProfile = JSON.parse(localStorage.getItem('userProfile'));
+            
+            if (savedProfile && savedProfile.username === username) {
+                // Returning user
+                isLoggedIn = true;
+                userProfile = savedProfile;
+                
+                localStorage.setItem('isLoggedIn', JSON.stringify(true));
+                
+                updateProfileButton();
+                updateHomePageButtons();
+                showPage('home');
+                alert('Welcome back, ' + username + '!');
+            } else {
+                alert('User not found. Please sign up first.');
+            }
+        } else {
+            alert('Please enter username and password');
+        }
+    }
+}
+
+// Handle profile button click
+function handleProfileClick() {
+    if (isLoggedIn) {
+        showPage('profile');
+    } else {
+        showPage('login');
+    }
+}
+
+// Load profile data
+function loadProfileData() {
+    if (!isLoggedIn || !userProfile) {
+        showPage('login');
+        return;
+    }
+    
+    // Load profile picture
+    const profilePic = document.getElementById('profile-picture');
+    if (profilePic && userProfile.profilePicture) {
+        profilePic.src = userProfile.profilePicture;
+    }
+    
+    // Load form data
+    if (userProfile) {
+        document.getElementById('username').value = userProfile.username || '';
+        
+        // Email is now pre-filled and readonly
+        const emailField = document.getElementById('email');
+        emailField.value = userProfile.email || '';
+        emailField.readOnly = true;
+        emailField.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+        emailField.style.cursor = 'not-allowed';
+        
+        document.getElementById('bio').value = userProfile.bio || '';
+        
+        // Load genre preferences
+        document.querySelectorAll('.genre-checkboxes input[type="checkbox"]').forEach(checkbox => {
+            checkbox.checked = userProfile.genres && userProfile.genres.includes(checkbox.value);
+        });
+    }
+}
+
+// Save profile
+function saveProfile() {
+    const username = document.getElementById('username').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const bio = document.getElementById('bio').value.trim();
+    
+    const selectedGenres = Array.from(document.querySelectorAll('.genre-checkboxes input:checked'))
+        .map(cb => cb.value);
+
+    userProfile = {
+        ...userProfile,
+        username: username,
+        email: email,
+        bio: bio,
+        genres: selectedGenres
+    };
+
+    localStorage.setItem('userProfile', JSON.stringify(userProfile));
+    updateProfileButton();
+    alert('Profile saved successfully!');
+}
+
+// Update profile button
+function updateProfileButton() {
+    const btn = document.getElementById('profile-btn');
+    if (isLoggedIn && userProfile && userProfile.username) {
+        btn.textContent = userProfile.username;
+    } else {
+        btn.textContent = 'Login';
+    }
+}
+
+// Handle logout
+function handleLogout() {
+    if (confirm('Are you sure you want to logout?')) {
+        isLoggedIn = false;
+        localStorage.setItem('isLoggedIn', JSON.stringify(false));
+        updateProfileButton();
+        updateHomePageButtons();
+        showPage('home');
+        alert('Logged out successfully!');
+    }
+}
+
+// Handle profile picture upload
+function handleProfilePicUpload(e) {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const dataURL = event.target.result;
+            document.getElementById('profile-picture').src = dataURL;
+            if (userProfile) {
+                userProfile.profilePicture = dataURL;
+                localStorage.setItem('userProfile', JSON.stringify(userProfile));
+            }
+        };
+        reader.readAsDataURL(file);
     }
 }
 
@@ -115,8 +420,7 @@ function displayShows(shows) {
 function createShowCard(show) {
     const card = document.createElement('div');
     card.className = 'show-card';
-    card.onclick = () => showDetails(show.id);
-
+    
     const isFavorite = favorites.includes(show.id);
     const isInWatchlist = watchlist.includes(show.id);
 
@@ -124,7 +428,7 @@ function createShowCard(show) {
         <div class="show-poster-container">
             <img src="${show.poster}" alt="${show.title}" class="show-poster">
             <div class="show-overlay">
-                <button class="quick-action" onclick="event.stopPropagation(); toggleWatchlist(${show.id})">
+                <button class="quick-action" data-id="${show.id}" data-action="watchlist">
                     ${isInWatchlist ? '✓' : '+'} Watchlist
                 </button>
             </div>
@@ -142,73 +446,201 @@ function createShowCard(show) {
         ${isFavorite ? '<span class="favorite-badge">❤</span>' : ''}
     `;
 
+    // Click card to view details
+    card.addEventListener('click', (e) => {
+        // Don't navigate if clicking the watchlist button
+        if (!e.target.closest('.quick-action')) {
+            showDetails(show.id);
+        }
+    });
+
+    // Watchlist button
+    const watchlistBtn = card.querySelector('.quick-action');
+    if (watchlistBtn) {
+        watchlistBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleWatchlist(show.id);
+            displayShows(currentShows);
+        });
+    }
+
     return card;
 }
 
 // Show details page
 function showDetails(showId) {
+    clearVideoPlayer();
+    console.log('Opening show details for ID:', showId);
+    
     const show = getShowById(showId);
-    if (!show) return;
+    if (!show) {
+        console.error('Show not found:', showId);
+        return;
+    }
 
     // Add to recently watched
     addToRecentlyWatched(showId);
 
-    // Update details page
-    document.getElementById('detail-poster').src = show.poster;
-    document.getElementById('detail-poster').alt = show.title;
-    document.getElementById('detail-title').textContent = show.title;
-    document.getElementById('detail-rating').textContent = `⭐ ${show.rating}`;
-    document.getElementById('detail-year').textContent = show.year;
-    document.getElementById('detail-genre').textContent = show.genres.join(', ');
-    document.getElementById('detail-description').textContent = show.description;
+    // Set backdrop and poster
+    const backdropImg = document.getElementById('backdrop-image');
+    const posterImg = document.getElementById('detail-poster');
+    
+    if (backdropImg) backdropImg.src = show.poster;
+    if (posterImg) posterImg.src = show.poster;
+    
+    // Set show info
+    const titleEl = document.getElementById('detail-title');
+    const ratingNumEl = document.getElementById('detail-rating-num');
+    const ratingEl = document.getElementById('detail-rating');
+    const yearEl = document.getElementById('detail-year');
+    const genreEl = document.getElementById('detail-genre');
+    const descEl = document.getElementById('detail-description');
+    
+    if (titleEl) titleEl.textContent = show.title;
+    if (ratingNumEl) ratingNumEl.textContent = show.rating;
+    if (ratingEl) ratingEl.textContent = `IMDB: ${show.rating}`;
+    if (yearEl) yearEl.textContent = show.year;
+    if (genreEl) genreEl.textContent = show.genres.join(', ');
+    if (descEl) descEl.textContent = show.description;
+    
+    // Set duration and country
+    const durationEl = document.getElementById('detail-duration');
+    const countryEl = document.getElementById('detail-country');
+    if (durationEl) durationEl.textContent = 'N/A';
+    if (countryEl) countryEl.textContent = 'United States';
 
-    // Update buttons
-    const playBtn = document.getElementById('play-btn');
-    const downloadBtn = document.getElementById('download-btn');
-    const addWatchlistBtn = document.getElementById('add-watchlist');
-    const favoriteBtn = document.getElementById('favorite-btn');
+    // Setup buttons
+    setupShowButtons(show);
 
-    playBtn.onclick = () => playVideo(show.videoUrl);
-    downloadBtn.onclick = () => downloadShow(show.downloadUrl);
-    addWatchlistBtn.onclick = () => toggleWatchlist(showId);
-    favoriteBtn.onclick = () => toggleFavorite(showId);
-
-    // Update button states
-    updateWatchlistButton(showId);
-    updateFavoriteButton(showId);
+    // Load episodes
+    loadSeasonsAndEpisodes(show);
 
     // Load similar shows
-    loadSimilarShows(showId);
+    loadSimilarShows(show.id);
 
     // Show the details page
     showPage('show-details');
 }
 
-// Play video
-function playVideo(videoUrl) {
+// Setup show detail buttons
+function setupShowButtons(show) {
+    // Hero play button
+    const heroPlayBtn = document.getElementById('hero-play-btn');
+    if (heroPlayBtn) {
+        heroPlayBtn.onclick = () => {
+            const episodesContainer = document.querySelector('.episodes-container');
+            if (episodesContainer) {
+                episodesContainer.scrollIntoView({ behavior: 'smooth' });
+            }
+        };
+    }
+
+    // Watch now button
+    const watchNowBtn = document.getElementById('watch-now-btn');
+    if (watchNowBtn) {
+        watchNowBtn.onclick = () => {
+            if (show.trailer) {
+                playEpisode(show.trailer, show.title + ' - Trailer');
+            } else {
+                const episodesContainer = document.querySelector('.episodes-container');
+                if (episodesContainer) {
+                    episodesContainer.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+        };
+    }
+
+    // Add to favorite button
+    const addFavoriteBtn = document.getElementById('add-favorite-btn');
+    if (addFavoriteBtn) {
+        if (favorites.includes(show.id)) {
+            addFavoriteBtn.textContent = '✓ Added to favorites';
+            addFavoriteBtn.style.backgroundColor = '#10b981';
+        } else {
+            addFavoriteBtn.textContent = '+ Add to favorite';
+            addFavoriteBtn.style.backgroundColor = '';
+        }
+        addFavoriteBtn.onclick = () => toggleFavorite(show.id);
+    }
+}
+
+// Load seasons and episodes
+function loadSeasonsAndEpisodes(show) {
+    const seasonSelect = document.getElementById('season-select');
+    const episodesList = document.getElementById('episodes-list');
+    
+    seasonSelect.innerHTML = '';
+    episodesList.innerHTML = '';
+    
+    if (!show.seasons || show.seasons.length === 0) {
+        episodesList.innerHTML = '<p class="no-episodes">No episodes available</p>';
+        return;
+    }
+    
+    // Populate season dropdown
+    show.seasons.forEach(season => {
+        const option = document.createElement('option');
+        option.value = season.seasonNumber;
+        option.textContent = season.seasonNumber;
+        seasonSelect.appendChild(option);
+    });
+    
+    // Load first season by default
+    loadEpisodeButtons(show, 1);
+    
+    // Handle season change
+    seasonSelect.onchange = () => {
+        const selectedSeason = parseInt(seasonSelect.value);
+        loadEpisodeButtons(show, selectedSeason);
+    };
+}
+
+// Load episode buttons for selected season
+function loadEpisodeButtons(show, seasonNumber) {
+    const episodesList = document.getElementById('episodes-list');
+    episodesList.innerHTML = '';
+    
+    const season = show.seasons.find(s => s.seasonNumber === seasonNumber);
+    if (!season || !season.episodes) {
+        episodesList.innerHTML = '<p class="no-episodes">No episodes available</p>';
+        return;
+    }
+    
+    season.episodes.forEach(episode => {
+        const episodeBtn = document.createElement('button');
+        episodeBtn.className = 'episode-btn';
+        episodeBtn.innerHTML = `
+            <span class="episode-num">Eps ${episode.episodeNumber}:</span>
+            <span class="episode-name">${episode.title}</span>
+            <span class="episode-time">${episode.duration}</span>
+        `;
+        
+        // Click to play episode
+        episodeBtn.onclick = () => {
+            playEpisode(episode.videoUrl, `${show.title} - S${seasonNumber}E${episode.episodeNumber}: ${episode.title}`);
+        };
+        
+        episodesList.appendChild(episodeBtn);
+    });
+}
+
+// Play episode in player
+function playEpisode(videoUrl, title) {
     if (!videoUrl) {
         alert('Video not available');
         return;
     }
 
-    const playerContainer = document.getElementById('video-player');
-    const playerIframe = document.getElementById('player-iframe');
+    const playerContainer = document.getElementById('player-container');
+    const playerIframe = document.getElementById('video-iframe');
+    const nowPlayingTitle = document.getElementById('now-playing-title');
     
+    nowPlayingTitle.textContent = title;
     playerIframe.src = videoUrl;
     playerContainer.classList.remove('hidden');
     
     // Scroll to player
     playerContainer.scrollIntoView({ behavior: 'smooth' });
-}
-
-// Download show
-function downloadShow(downloadUrl) {
-    if (!downloadUrl) {
-        alert('Download not available for this show');
-        return;
-    }
-    
-    window.open(downloadUrl, '_blank');
 }
 
 // Toggle watchlist
@@ -222,7 +654,6 @@ function toggleWatchlist(showId) {
     }
     
     localStorage.setItem('watchlist', JSON.stringify(watchlist));
-    updateWatchlistButton(showId);
     
     // Refresh if on watchlist page
     if (document.getElementById('watchlist').classList.contains('active')) {
@@ -241,23 +672,17 @@ function toggleFavorite(showId) {
     }
     
     localStorage.setItem('favorites', JSON.stringify(favorites));
-    updateFavoriteButton(showId);
-}
-
-// Update watchlist button state
-function updateWatchlistButton(showId) {
-    const btn = document.getElementById('add-watchlist');
-    if (btn) {
-        btn.textContent = watchlist.includes(showId) ? '✓ In Watchlist' : '+ Watchlist';
-    }
-}
-
-// Update favorite button state
-function updateFavoriteButton(showId) {
-    const btn = document.getElementById('favorite-btn');
-    if (btn) {
-        btn.textContent = favorites.includes(showId) ? '❤ Favorited' : '❤ Favorite';
-        btn.style.color = favorites.includes(showId) ? '#e50914' : '';
+    
+    // Update button if on details page
+    const favoriteBtn = document.getElementById('add-favorite-btn');
+    if (favoriteBtn) {
+        if (favorites.includes(showId)) {
+            favoriteBtn.textContent = '✓ Added to favorites';
+            favoriteBtn.style.backgroundColor = '#10b981';
+        } else {
+            favoriteBtn.textContent = '+ Add to favorite';
+            favoriteBtn.style.backgroundColor = '';
+        }
     }
 }
 
@@ -265,7 +690,7 @@ function updateFavoriteButton(showId) {
 function addToRecentlyWatched(showId) {
     recentlyWatched = recentlyWatched.filter(id => id !== showId);
     recentlyWatched.unshift(showId);
-    recentlyWatched = recentlyWatched.slice(0, 20); // Keep last 20
+    recentlyWatched = recentlyWatched.slice(0, 20);
     localStorage.setItem('recentlyWatched', JSON.stringify(recentlyWatched));
 }
 
@@ -381,7 +806,7 @@ function loadWatchlistTab(tab) {
             <div class="empty-state">
                 <span class="empty-icon">📺</span>
                 <p>Nothing here yet!</p>
-                <button class="btn btn-primary" onclick="location.href='#browse'">Browse Shows</button>
+                <button class="btn btn-primary" onclick="showPage('browse')">Browse Shows</button>
             </div>
         `;
         return;
@@ -391,61 +816,6 @@ function loadWatchlistTab(tab) {
         const card = createShowCard(show);
         grid.appendChild(card);
     });
-}
-
-// Profile management
-function loadProfileData() {
-    if (userProfile) {
-        document.getElementById('username').value = userProfile.username || '';
-        document.getElementById('email').value = userProfile.email || '';
-        document.getElementById('bio').value = userProfile.bio || '';
-        
-        // Load genre preferences
-        document.querySelectorAll('.genre-checkboxes input[type="checkbox"]').forEach(checkbox => {
-            checkbox.checked = userProfile.genres && userProfile.genres.includes(checkbox.value);
-        });
-    }
-}
-
-function saveProfile() {
-    const username = document.getElementById('username').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const bio = document.getElementById('bio').value.trim();
-    
-    const selectedGenres = Array.from(document.querySelectorAll('.genre-checkboxes input:checked'))
-        .map(cb => cb.value);
-
-    userProfile = {
-        username: username,
-        email: email,
-        bio: bio,
-        genres: selectedGenres
-    };
-
-    localStorage.setItem('userProfile', JSON.stringify(userProfile));
-    updateProfileButton();
-    alert('Profile saved successfully!');
-}
-
-function updateProfileButton() {
-    const btn = document.getElementById('profile-btn');
-    if (userProfile && userProfile.username) {
-        btn.textContent = userProfile.username;
-    } else {
-        btn.textContent = 'Login';
-    }
-}
-
-function clearAllData() {
-    if (confirm('Are you sure you want to clear all your data? This cannot be undone.')) {
-        localStorage.clear();
-        watchlist = [];
-        favorites = [];
-        recentlyWatched = [];
-        userProfile = null;
-        alert('All data cleared!');
-        location.reload();
-    }
 }
 
 // Theme management
@@ -459,7 +829,11 @@ function toggleTheme() {
     
     // Update icon
     const icon = document.querySelector('.theme-icon');
-    icon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+    if (icon) {
+        icon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+    }
+    
+    console.log('Theme switched to:', newTheme);
 }
 
 function loadThemePreference() {
@@ -467,5 +841,21 @@ function loadThemePreference() {
     document.body.setAttribute('data-theme', savedTheme);
     
     const icon = document.querySelector('.theme-icon');
-    icon.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+    if (icon) {
+        icon.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+    }
+    
+    console.log('Theme loaded:', savedTheme);
+}
+
+function clearVideoPlayer() {
+    const playerIframe = document.getElementById('video-iframe');
+    const playerContainer = document.getElementById('player-container');
+    
+    if (playerIframe) {
+        playerIframe.src = '';
+    }
+    if (playerContainer) {
+        playerContainer.classList.add('hidden');
+    }
 }
