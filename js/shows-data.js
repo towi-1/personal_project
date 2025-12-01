@@ -368,8 +368,6 @@ function sortShows(shows, sortBy) {
     const sortedShows = [...shows];
     
     switch(sortBy) {
-        case 'popularity':
-            return sortedShows.sort((a, b) => b.rating - a.rating);
         case 'rating':
             return sortedShows.sort((a, b) => b.rating - a.rating);
         case 'release_date':
